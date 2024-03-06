@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 500px;
+    }
+
+    #legend {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      padding: 10px;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 12px;
+      color: #333;
+    }
+  </style>
+  <title>Earthquake Visualization</title>
+</head>
+<body>
+  <!-- Map container -->
+  <div id="map"></div>
+
+  <!-- Legend container -->
+  <div id="legend" class="leaflet-control">
+    <!-- Legend content will be dynamically updated here -->
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    var map = L.map('map').setView([0, 0], 2);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Fetch earthquake data from USGS API
+    fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson')
+      .then(response => response.json())
+      .then(data => {
+        // Loop through earthquake features and add markers to the map
+        data.features.forEach(feature => {
+          const { geometry, properties } = feature;
+          const { coordinates } = geometry;
+          const [longitude, latitude, depth] = coordinates;
+          const { mag } = properties;
+
+          // Create a marker with size and color based on magnitude and depth
+          const marker = L.circleMarker([latitude, longitude], {
+            radius: mag * 5,
+            color: getColorBasedOnDepth(depth),
+            fillOpacity: 0.7,
+          }).addTo(map);
+
+          // Add a popup with additional information
+          marker.bindPopup(`Magnitude: ${mag}<br>Depth: ${depth} km`);
+        });
+      });
+
+    // Function to determine marker color based on depth
+    function getColorBasedOnDepth(depth) {
+      return depth > 100 ? 'red' : 'blue';
+    }
+
+    // Update the legend content
+    var legendContent = '<strong>Legend</strong><br>';
+    legendContent += 'Magnitude: Circle size<br>';
+    legendContent += 'Depth: Circle color';
+    document.getElementById('legend').innerHTML = legendContent;
+  </script>
+</body>
+</html>
